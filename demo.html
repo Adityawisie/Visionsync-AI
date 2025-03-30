@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Powered Testing Agent</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <!-- Feather Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    <!-- Chart.js -->
+     <link rel="stylesheet" href="utilityclass.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="text-center">
+            <div class="spinner-border loading-spinner text-light" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div id="loadingMessage" class="loading-message">Processing...</div>
+        </div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i data-feather="cpu"></i> AI Testing Agent
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i data-feather="home"></i> Projects
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('automation_overview') }}">
+                            <i data-feather="code"></i> Automation
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container-fluid py-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-center text-white-50 py-3 mt-5">
+        <div class="container">
+            <p>AI-Powered Testing Agent &copy; 2023</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Feather Icons -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            feather.replace();
+        });
+    </script>
+    <!-- Main JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <!-- Test Plan JS -->
+    <script src="{{ url_for('static', filename='js/test-plan.js') }}"></script>
+    <!-- Charts JS -->
+    <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+    
+    {% block scripts %}{% endblock %}
+
+    {% extends 'layout.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i data-feather="folder"></i> Projects</h1>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newProjectModal">
+                <i data-feather="plus"></i> New Project
+            </button>
+        </div>
+        
+        {% if projects %}
+            <div class="row row-cols-1 row-cols-md-3 g-4">
+                {% for project in projects %}
+                    <div class="col">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ project.name }}</h5>
+                                <p class="card-text">{{ project.description }}</p>
+                                <p class="card-text"><small class="text-muted">Created on {{ project.created_at.strftime('%Y-%m-%d') }}</small></p>
+                            </div>
+                            <div class="card-footer bg-transparent">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{{ url_for('project_requirements', project_id=project.id) }}" class="btn btn-outline-primary">
+                                        <i data-feather="file-text"></i> Requirements
+                                    </a>
+                                    <a href="{{ url_for('project_designs', project_id=project.id) }}" class="btn btn-outline-info">
+                                        <i data-feather="layout"></i> Designs
+                                    </a>
+                                    <a href="{{ url_for('test_plans', project_id=project.id) }}" class="btn btn-outline-success">
+                                        <i data-feather="check-square"></i> Test Plans
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info" role="alert">
+                <i data-feather="info"></i> No projects yet. Create your first project to get started.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- New Project Modal -->
+<div class="modal fade" id="newProjectModal" tabindex="-1" aria-labelledby="newProjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="newProjectModalLabel">Create New Project</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('new_project') }}" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="projectName" class="form-label">Project Name</label>
+                        <input type="text" class="form-control" id="projectName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="projectDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="projectDescription" name="description" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Projects</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ project.name }} - Requirements</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i data-feather="file-text"></i> Requirements</h1>
+            <div>
+                <a href="{{ url_for('project_designs', project_id=project.id) }}" class="btn btn-info me-2">
+                    <i data-feather="layout"></i> Design Analysis
+                </a>
+                <a href="{{ url_for('test_plans', project_id=project.id) }}" class="btn btn-success me-2">
+                    <i data-feather="check-square"></i> Test Plans
+                </a>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadRequirementModal">
+                    <i data-feather="upload"></i> Upload Requirements
+                </button>
+            </div>
+        </div>
+        
+        {% if requirements %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Requirements List</h5>
+                        <div class="form-group">
+                            <select class="form-select" id="requirementTypeFilter">
+                                <option value="all">All Requirements</option>
+                                <option value="functional">Functional</option>
+                                <option value="ui">UI/UX</option>
+                                <option value="nonfunctional">Non-Functional</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>File Name</th>
+                                    <th>Uploaded</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for req in requirements %}
+                                <tr>
+                                    <td>{{ req.file_name }}</td>
+                                    <td>{{ req.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                    <td>
+                                        <span id="req-{{ req.id }}-status" class="badge req-analysis-status-{{ req.analysis_status }}">
+                                            {{ req.analysis_status|capitalize }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if req.analysis_status == 'completed' %}
+                                            <button type="button" class="btn btn-sm btn-info toggle-analysis-btn" data-target="analysis-{{ req.id }}">
+                                                Show Analysis
+                                            </button>
+                                        {% elif req.analysis_status == 'failed' or req.analysis_status == 'pending' %}
+                                            <button type="button" class="btn btn-sm btn-warning analyze-requirement-btn" 
+                                                    data-req-id="{{ req.id }}" data-project-id="{{ project.id }}">
+                                                Analyze
+                                            </button>
+                                        {% else %}
+                                            <button type="button" class="btn btn-sm btn-secondary" disabled>
+                                                Analyzing...
+                                            </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% if req.analysis_status == 'completed' %}
+                                <tr id="analysis-{{ req.id }}" class="d-none">
+                                    <td colspan="4">
+                                        <div class="analysis-section">
+                                            <h5>Functional Requirements</h5>
+                                            <div class="list-group">
+                                                {% for fr in req.get_analysis_result_json().get('functional_requirements', []) %}
+                                                <div class="list-group-item requirement-item req-type-functional">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <h6 class="mb-1">{{ fr.id }}: {{ fr.description }}</h6>
+                                                        <span class="badge test-priority-{{ fr.test_priority }}">{{ fr.test_priority|capitalize }}</span>
+                                                    </div>
+                                                    <p class="mb-1"><strong>Can Automate:</strong> 
+                                                        <span class="badge can-automate-{{ fr.can_automate|lower }}">
+                                                            {{ 'Yes' if fr.can_automate else 'No' }}
+                                                        </span>
+                                                    </p>
+                                                    {% if fr.potential_test_cases %}
+                                                    <p class="mb-0"><strong>Potential Test Cases:</strong></p>
+                                                    <ul class="mb-0">
+                                                        {% for tc in fr.potential_test_cases %}
+                                                        <li>{{ tc }}</li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                    {% endif %}
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="analysis-section">
+                                            <h5>UI Requirements</h5>
+                                            <div class="list-group">
+                                                {% for ui in req.get_analysis_result_json().get('ui_requirements', []) %}
+                                                <div class="list-group-item requirement-item req-type-ui">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <h6 class="mb-1">{{ ui.id }}: {{ ui.description }}</h6>
+                                                        <span class="badge test-priority-{{ ui.test_priority }}">{{ ui.test_priority|capitalize }}</span>
+                                                    </div>
+                                                    <p class="mb-1"><strong>Can Automate:</strong> 
+                                                        <span class="badge can-automate-{{ ui.can_automate|lower }}">
+                                                            {{ 'Yes' if ui.can_automate else 'No' }}
+                                                        </span>
+                                                    </p>
+                                                    {% if ui.potential_test_cases %}
+                                                    <p class="mb-0"><strong>Potential Test Cases:</strong></p>
+                                                    <ul class="mb-0">
+                                                        {% for tc in ui.potential_test_cases %}
+                                                        <li>{{ tc }}</li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                    {% endif %}
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="analysis-section">
+                                            <h5>Non-Functional Requirements</h5>
+                                            <div class="list-group">
+                                                {% for nfr in req.get_analysis_result_json().get('non_functional_requirements', []) %}
+                                                <div class="list-group-item requirement-item req-type-nonfunctional">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <h6 class="mb-1">{{ nfr.id }}: {{ nfr.description }}</h6>
+                                                        <span class="badge test-priority-{{ nfr.test_priority }}">{{ nfr.test_priority|capitalize }}</span>
+                                                    </div>
+                                                    <p class="mb-1"><strong>Can Automate:</strong> 
+                                                        <span class="badge can-automate-{{ nfr.can_automate|lower }}">
+                                                            {{ 'Yes' if nfr.can_automate else 'No' }}
+                                                        </span>
+                                                    </p>
+                                                    {% if nfr.potential_test_cases %}
+                                                    <p class="mb-0"><strong>Potential Test Cases:</strong></p>
+                                                    <ul class="mb-0">
+                                                        {% for tc in nfr.potential_test_cases %}
+                                                        <li>{{ tc }}</li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                    {% endif %}
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="analysis-section">
+                                            <h5>Edge Cases</h5>
+                                            <div class="list-group">
+                                                {% for ec in req.get_analysis_result_json().get('edge_cases', []) %}
+                                                <div class="list-group-item requirement-item">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <h6 class="mb-1">{{ ec.id }}: {{ ec.description }}</h6>
+                                                        <span class="badge test-priority-{{ ec.test_priority }}">{{ ec.test_priority|capitalize }}</span>
+                                                    </div>
+                                                    <p class="mb-0"><strong>Can Automate:</strong> 
+                                                        <span class="badge can-automate-{{ ec.can_automate|lower }}">
+                                                            {{ 'Yes' if ec.can_automate else 'No' }}
+                                                        </span>
+                                                    </p>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <div class="analysis-section">
+                                            <h5>Summary</h5>
+                                            <p>{{ req.get_analysis_result_json().get('summary', 'No summary available.') }}</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-info" role="alert">
+                <i data-feather="info"></i> No requirements uploaded yet. Upload requirements to analyze them.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Upload Requirement Modal -->
+<div class="modal fade" id="uploadRequirementModal" tabindex="-1" aria-labelledby="uploadRequirementModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="uploadRequirementModalLabel">Upload Requirements</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="requirementForm" action="{{ url_for('upload_requirements', project_id=project.id) }}" method="post" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="requirementFile" class="form-label">Requirements File</label>
+                        <input class="form-control" type="file" id="requirementFile" name="requirement_file">
+                        <small class="form-text text-muted">Supported formats: .txt, .pdf, .doc, .docx, .md</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="requirementText" class="form-label">Or enter requirements text directly:</label>
+                        <textarea class="form-control" id="requirementText" name="requirement_text" rows="10" placeholder="Enter requirements text here..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Upload & Analyze</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+<script src="demo.js"></script>
+</body>
+</html>
